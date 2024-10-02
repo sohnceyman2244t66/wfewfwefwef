@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #00bcd4;
+            margin-bottom: 30px;
+        }
+        p {
+            color: #cccccc;
+            margin-bottom: 40px;
+        }
+        #store-id-input {
+            margin-bottom: 30px;
+        }
+        #store-id-input input {
+            padding: 10px;
+            width: 400px;
+            max-width: 100%;
+            border: none;
+            border-radius: 5px;
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+        #variant-list {
+            margin-bottom: 20px;
+        }
+        .variant-entry {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        .variant-entry input {
+            padding: 10px;
+            margin: 5px;
+            width: 300px;
+            border: none;
+            border-radius: 5px;
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+        .variant-entry button {
+            padding: 10px 15px;
+            margin-left: 10px;
+            background-color: #e53935;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .variant-entry button:hover {
+            background-color: #d32f2f;
+        }
+        #add-variant-button, #export-button {
+            padding: 15px 30px;
+            font-size: 16px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #add-variant-button {
+            background-color: #43a047;
+            color: #ffffff;
+        }
+        #add-variant-button:hover {
+            background-color: #388e3c;
+        }
+        #export-button {
+            background-color: #1e88e5;
+            color: #ffffff;
+        }
+        #export-button:hover {
+            background-color: #1976d2;
+        }
+        /* Setup guide styles */
+        #setup-guide {
+            margin-top: 60px;
+            text-align: left;
+        }
+        #setup-guide h2 {
+            color: #00bcd4;
+            margin-bottom: 20px;
+        }
+        #setup-guide ol {
+            color: #cccccc;
+            line-height: 1.6;
+        }
+        #setup-guide li {
+            margin-bottom: 15px;
+        }
+        #setup-guide code {
+            background-color: #1e1e1e;
+            padding: 2px 4px;
+            border-radius: 3px;
+            color: #ffeb3b;
+        }
+        @media (max-width: 600px) {
+            .variant-entry {
+                flex-direction: column;
+            }
+            .variant-entry input {
+                width: calc(100% - 20px);
+                margin: 5px 0;
+            }
+            .variant-entry button {
+                margin: 10px 0 0 0;
+            }
+            #store-id-input input {
+                width: calc(100% - 20px);
+            }
+            #setup-guide {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p>Enter your SellSN Store ID, Shopify Variant IDs, and their corresponding SellSN Product IDs:</p>
+
+        <!-- SellSN Store ID Input -->
+        <div id="store-id-input">
+            <input type="text" id="sellsn-store-id" placeholder="SellSN Store ID" value="">
+        </div>
+
+        <div id="variant-list">
+            <!-- Variant entries will be added here -->
+        </div>
+        <button id="add-variant-button">Add Variant</button>
+        <button id="export-button">Export .JS File</button>
+
+        <!-- Setup Guide -->
+        <div id="setup-guide">
+            <h2>Setup Guide</h2>
+            <ol>
+                <li>
+                    <strong>Enter Your SellSN Store ID:</strong><br>
+                    Input your SellSN Store ID in the designated field at the top. You can find it at https://dash.sellsn.io/settings/, click <code>Copy ID</code> at the top right.
+                </li>
+                <li>
+                    <strong>Enter Variant IDs and SellSN Product IDs:</strong><br>
+                    Add your Shopify Variant IDs and corresponding SellSN Product IDs. Use the "Add Variant" button to include multiple entries.
+                </li>
+                <li>
+                    <strong>Export the Custom Script:</strong><br>
+                    Click the "Export .JS File" button to generate and download the <code>custom-script.js</code> file.
+                </li>
+                <li>
+                    <strong>Upload the Script to Shopify:</strong><br>
+                    Upload the <code>custom-script.js</code> file to your Shopify theme's <em>Assets</em> folder.
+                </li>
+                <li>
+                    <strong>Include the Script in Your Theme:</strong><br>
+                    Edit your <code>theme.liquid</code> file and include the script with the following code, placed just before the closing <code>&lt;/body&gt;</code> tag:
+                    <pre style="background-color: #1e1e1e; padding: 10px; border-radius: 5px; color: #ffffff; overflow-x: auto;">
+{{ 'custom-script.js' | asset_url | script_tag }}</pre>
+                </li>
+                <li>
+                    <strong>Test the Integration:</strong><br>
+                    Visit a product page on your store to ensure the script is working as expected.
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript code to handle the generator functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const variantList = document.getElementById('variant-list');
+            const addVariantButton = document.getElementById('add-variant-button');
+            const exportButton = document.getElementById('export-button');
+            const storeIdInput = document.getElementById('sellsn-store-id');
+
+            // Function to add a new variant entry row
+            function addVariantEntry(variantId = '', pid = '') {
+                const div = document.createElement('div');
+                div.className = 'variant-entry';
+                div.innerHTML = `
+                    <input type="text" class="variant-id" placeholder="Shopify Variant ID" value="${variantId}">
+                    <input type="text" class="pid" placeholder="SellSN Product ID" value="${pid}">
+                    <button class="remove-variant-button">Remove</button>
+                `;
+                const removeButton = div.querySelector('.remove-variant-button');
+                removeButton.addEventListener('click', function() {
+                    variantList.removeChild(div);
+                });
+                variantList.appendChild(div);
+            }
+
+            // Add initial variant entry
+            addVariantEntry();
+
+            // Event listener to add a new variant entry
+            addVariantButton.addEventListener('click', function() {
+                addVariantEntry();
+            });
+
+            // Event listener to export the JS file
+            exportButton.addEventListener('click', function() {
+                const storeId = storeIdInput.value.trim();
+                if (!storeId) {
+                    alert('Please enter your SellSN Store ID.');
+                    return;
+                }
+
+                const variantIds = variantList.querySelectorAll('.variant-id');
+                const pids = variantList.querySelectorAll('.pid');
+                const variantPidMapEntries = [];
+                for (let i = 0; i < variantIds.length; i++) {
+                    const variantId = variantIds[i].value.trim();
+                    const pid = pids[i].value.trim();
+                    if (variantId && pid) {
+                        variantPidMapEntries.push(`                '${variantId}': '${pid}'`);
+                    }
+                }
+                if (variantPidMapEntries.length === 0) {
+                    alert('Please enter at least one Variant ID and PID pair.');
+                    return;
+                }
+
+                const variantPidMapString = 'const variantPidMap = {\n' + variantPidMapEntries.join(',\n') + '\n            };';
+
+                // Include the rest of your script here, ensuring variantPidMap is inside getPidForVariant
+                const scriptContent = generateScript(variantPidMapString, storeId);
+
+                // Create a blob of the script content
+                const blob = new Blob([scriptContent], { type: 'application/javascript' });
+
+                // Create a link to download the blob
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'custom-script.js';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
+            // Function to generate the rest of the script
+            function generateScript(variantPidMapString, storeId) {
+                return `(function() {
+            'use strict';
+
+            console.log('Custom script started.');
+
+            // Step 1: Check if we're on a Shopify product page
+            if (!window.location.pathname.includes('/products/')) {
+                console.log('Not a product page, exiting script.');
+                return;
+            }
+            console.log('On a product page.');
+
+            // Step 2: Check if the DOM is already loaded
+            if (document.readyState === 'loading') {
+                console.log('Document is still loading, adding DOMContentLoaded event listener.');
+                document.addEventListener('DOMContentLoaded', initScript);
+            } else {
+                console.log('Document is already ready, running initScript immediately.');
+                initScript();
+            }
+
+            function initScript() {
+                console.log('DOM is ready, starting script.');
+
+                // Step 3: Load the embed script once
+                loadEmbedScript();
+
+                // Step 4: Modify the buttons to act as the Show embed button
+                modifyButtons();
+
+                // Step 5: Update the data-sellsn-pid and data-sellsn-quantity when the variant or quantity changes
+                setupVariantAndQuantityChangeListeners();
+            }
+
+            function loadEmbedScript() {
+                console.log('Loading embed script.');
+                const existingScript = document.querySelector('script[src="https://pay.sellsn.io/embed.min.js"]');
+                if (!existingScript) {
+                    const embedScript = document.createElement('script');
+                    embedScript.type = 'text/javascript';
+                    embedScript.src = 'https://pay.sellsn.io/embed.min.js';
+                    document.head.appendChild(embedScript);
+                    console.log('Embed script added to document head.');
+                } else {
+                    console.log('Embed script already present.');
+                }
+            }
+
+            function modifyButtons() {
+                console.log('Modifying buttons.');
+
+                // Get both the Add to Cart and Purchase Now buttons
+                const buttons = getActionButtons();
+
+                if (buttons.length > 0) {
+                    buttons.forEach(button => {
+                        // Remove default action
+                        button.type = 'button'; // Change type to 'button' to prevent form submission
+                        button.removeAttribute('name'); // Remove 'name' attribute if present
+
+                        // Add the data-sellsn-sid attribute
+                        button.setAttribute('data-sellsn-sid', '${storeId}');
+
+                        // Initially set data-sellsn-pid and data-sellsn-quantity based on the selected variant and quantity
+                        const selectedVariantId = getSelectedVariantId();
+                        console.log('Initial selected variant ID:', selectedVariantId);
+                        updateButtonAttributes(button, selectedVariantId);
+
+                        // Add click event listener to the button if not already added
+                        if (!button.dataset.embedInitialized) {
+                            button.dataset.embedInitialized = 'true';
+                            button.addEventListener('click', function(event) {
+                                event.preventDefault();
+                                console.log('Button clicked:', button);
+
+                                // Ensure the data-sellsn-pid and data-sellsn-quantity are up to date
+                                const variantId = getSelectedVariantId();
+                                updateButtonAttributes(button, variantId);
+
+                                const pid = getPidForVariant(variantId);
+                                if (pid) {
+                                    // Trigger the embed behavior
+                                    if (window.SellsnEmbed && typeof window.SellsnEmbed.init === 'function') {
+                                        window.SellsnEmbed.init();
+                                        console.log('SellsnEmbed initialized.');
+                                    } else {
+                                        console.error('SellsnEmbed is not available.');
+                                    }
+                                } else {
+                                    // Show a professional message box to the user
+                                    const message = \`We're sorry, but the selected product variant (ID: \${variantId}) requires a configured SellSN Product ID. Please refer to our setup guide for assistance.\`;
+                                    alert(message);
+                                    console.warn('PID not found for Variant ID:', variantId);
+                                }
+                            });
+                        } else {
+                            console.log('Event listener already attached to button:', button);
+                        }
+                    });
+                } else {
+                    console.error('Action buttons not found.');
+                }
+            }
+
+            function getActionButtons() {
+                // Selectors for Add to Cart and Purchase Now buttons
+                const selectors = [
+                    'form[action^="/cart/add"] [type="submit"]',
+                    'button[name="add"]',
+                    'button.add-to-cart',
+                    'button[name="checkout"]',
+                    'button.purchase-now',
+                    'button.buy-now',
+                    'button.button--buy',
+                    '.product-form__submit',
+                    '.btn--add-to-cart',
+                    '.product-form--atc-button'
+                ];
+
+                const buttons = [];
+
+                selectors.forEach(selector => {
+                    const foundButtons = document.querySelectorAll(selector);
+                    foundButtons.forEach(button => {
+                        if (!buttons.includes(button)) {
+                            buttons.push(button);
+                        }
+                    });
+                });
+
+                console.log('Found', buttons.length, 'action buttons.');
+                return buttons;
+            }
+
+            function updateButtonAttributes(button, variantId) {
+                console.log('Updating button attributes for variant ID:', variantId);
+
+                // Update data-sellsn-pid
+                const pid = getPidForVariant(variantId);
+                if (pid) {
+                    button.setAttribute('data-sellsn-pid', pid);
+                    console.log('data-sellsn-pid set to:', pid);
+                } else {
+                    console.warn('No PID found for Variant ID:', variantId);
+                    button.removeAttribute('data-sellsn-pid');
+                }
+
+                // Update data-sellsn-quantity
+                const quantity = getSelectedQuantity();
+                if (quantity) {
+                    button.setAttribute('data-sellsn-quantity', quantity);
+                    console.log('data-sellsn-quantity set to:', quantity);
+                } else {
+                    console.warn('Quantity not found, data-sellsn-quantity not set.');
+                    button.removeAttribute('data-sellsn-quantity');
+                }
+            }
+
+            function setupVariantAndQuantityChangeListeners() {
+                console.log('Setting up variant and quantity change listeners.');
+
+                // Variant change listener
+                const variantSelect = document.querySelector('form[action^="/cart/add"] select[name="id"]');
+                if (variantSelect) {
+                    variantSelect.addEventListener('change', function() {
+                        console.log('Variant select changed.');
+                        const variantId = variantSelect.value;
+                        const buttons = getActionButtons();
+                        buttons.forEach(button => {
+                            updateButtonAttributes(button, variantId);
+                        });
+                    });
+                } else {
+                    console.log('Variant select element not found.');
+                    // Use MutationObserver to detect changes in the hidden input field
+                    observeVariantIdChanges();
+                }
+
+                // Quantity change listener
+                let quantityInput = document.querySelector('input[name="quantity"]');
+                if (quantityInput) {
+                    quantityInput.addEventListener('change', onQuantityChange);
+                    console.log('Quantity input found with name="quantity".');
+                } else {
+                    // Try alternative selectors
+                    quantityInput = document.querySelector('.quantity__input');
+                    if (quantityInput) {
+                        quantityInput.addEventListener('change', onQuantityChange);
+                        console.log('Quantity input found with class "quantity__input".');
+                    } else {
+                        quantityInput = document.querySelector('input[id^="Quantity-"]');
+                        if (quantityInput) {
+                            quantityInput.addEventListener('change', onQuantityChange);
+                            console.log('Quantity input found with id starting with "Quantity-".');
+                        } else {
+                            console.log('Quantity input field not found.');
+                        }
+                    }
+                }
+            }
+
+            function onQuantityChange() {
+                console.log('Quantity changed.');
+                const variantId = getSelectedVariantId();
+                const buttons = getActionButtons();
+                buttons.forEach(button => {
+                    updateButtonAttributes(button, variantId);
+                });
+            }
+
+            function observeVariantIdChanges() {
+                console.log('Setting up MutationObserver for variant ID changes.');
+                const variantInput = document.querySelector('input[type="hidden"][name="id"]');
+                if (variantInput) {
+                    const observer = new MutationObserver(() => {
+                        console.log('Variant input value changed.');
+                        const variantId = variantInput.value;
+                        const buttons = getActionButtons();
+                        buttons.forEach(button => {
+                            updateButtonAttributes(button, variantId);
+                        });
+                    });
+
+                    observer.observe(variantInput, { attributes: true, attributeFilter: ['value'] });
+                } else {
+                    console.log('Variant input field not found.');
+                }
+            }
+
+            function getSelectedVariantId() {
+                console.log('Attempting to get selected variant ID.');
+
+                // Method 1: Check for variantId in URL query parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const variantIdFromURL = urlParams.get('variant');
+                if (variantIdFromURL) {
+                    console.log('Variant ID found in URL:', variantIdFromURL);
+                    return variantIdFromURL;
+                }
+
+                // Method 2: Look for a select element with name 'id' and get its value
+                const variantSelect = document.querySelector('select[name="id"]');
+                if (variantSelect && variantSelect.value) {
+                    console.log('Variant ID found in select element:', variantSelect.value);
+                    return variantSelect.value;
+                }
+
+                // Method 3: Look for an input element with name 'id' and type 'hidden'
+                const variantInput = document.querySelector('input[type="hidden"][name="id"]');
+                if (variantInput && variantInput.value) {
+                    console.log('Variant ID found in hidden input:', variantInput.value);
+                    return variantInput.value;
+                }
+
+                // Method 4: Check if variantId is stored in a global JavaScript variable
+                if (window.product && window.product.selected_or_first_available_variant) {
+                    console.log('Variant ID found in window.product:', window.product.selected_or_first_available_variant.id);
+                    return window.product.selected_or_first_available_variant.id;
+                }
+
+                // Method 5: Check for theme-specific variables
+                if (window.slate && window.slate.Variants && window.slate.Variants.currentVariant) {
+                    console.log('Variant ID found in window.slate:', window.slate.Variants.currentVariant.id);
+                    return window.slate.Variants.currentVariant.id;
+                }
+
+                // Method 6: Parse meta tags or script variables
+                const metaVariantId = getVariantIdFromMeta();
+                if (metaVariantId) {
+                    console.log('Variant ID found in meta tag:', metaVariantId);
+                    return metaVariantId;
+                }
+
+                // If none of the above methods work, return null
+                console.warn('Selected Variant ID not found after all methods.');
+                return null;
+            }
+
+            function getVariantIdFromMeta() {
+                // Step X: Look for variant ID in meta tags
+                console.log('Looking for variant ID in meta tags.');
+                const metaVariant = document.querySelector('meta[name="variant:id"]');
+                if (metaVariant && metaVariant.content) {
+                    console.log('Variant ID found in meta tag content:', metaVariant.content);
+                    return metaVariant.content;
+                } else {
+                    console.log('Meta tag for variant ID not found or content is empty.');
+                    return null;
+                }
+            }
+
+            function getSelectedQuantity() {
+                console.log('Attempting to get selected quantity.');
+
+                // Method 1: Input with name="quantity"
+                let quantityInput = document.querySelector('input[name="quantity"]');
+                if (quantityInput && quantityInput.value) {
+                    console.log('Quantity found in input field with name="quantity":', quantityInput.value);
+                    return quantityInput.value;
+                }
+
+                // Method 2: Input with class "quantity__input"
+                quantityInput = document.querySelector('.quantity__input');
+                if (quantityInput && quantityInput.value) {
+                    console.log('Quantity found in input field with class "quantity__input":', quantityInput.value);
+                    return quantityInput.value;
+                }
+
+                // Method 3: Input with ID starting with "Quantity-"
+                quantityInput = document.querySelector('input[id^="Quantity-"]');
+                if (quantityInput && quantityInput.value) {
+                    console.log('Quantity found in input field with id starting with "Quantity-":', quantityInput.value);
+                    return quantityInput.value;
+                }
+
+                // Default quantity is 1 if no input is found or value is empty
+                console.log('Quantity input not found or value is empty. Defaulting to 1.');
+                return '1';
+            }
+
+            function getPidForVariant(variantId) {
+                console.log('Getting PID for Variant ID:', variantId);
+
+                // Mapping of Variant IDs to PIDs
+                ${variantPidMapString}
+
+                // Ensure variantId is a string
+                const variantIdStr = variantId ? variantId.toString() : '';
+
+                const pid = variantPidMap[variantIdStr];
+                if (pid) {
+                    console.log('PID found:', pid);
+                    return pid;
+                } else {
+                    console.warn('No PID mapping found for Variant ID:', variantIdStr);
+                    return null;
+                }
+            }
+
+        })();
+        `;
+            }
+        });
+    </script>
+</body>
+</html>
